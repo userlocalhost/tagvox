@@ -13,7 +13,7 @@ output_stream: src/output_stream.c
 	gcc -o ${tools_dir}/$@ $<
 
 src/gui.o: src/gui.c
-	gcc -c $< ${GTK_FLAGS}
+	gcc -o $@ -c $< ${GTK_FLAGS}
 
 get_ps.o:
 	gcc -c get_ps.c -lm -lgsl -lgslcblas
