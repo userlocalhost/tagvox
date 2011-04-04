@@ -8,4 +8,13 @@
 #define RET_SUCCESS 1
 #define RET_ERROR -1
 
+#ifdef __DEBUG__
+#define tagu_debug(...) \
+{\
+	printf(__VA_ARGS__);\
+}
+#else
+#define tagu_debug(...) {}
+#endif
+
 #endif
