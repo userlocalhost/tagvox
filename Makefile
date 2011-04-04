@@ -6,6 +6,9 @@ GTK_FLAGS=-D_REENTRANT -I/usr/include/gtk-2.0 -I/usr/lib/gtk-2.0/include -I/usr/
 all: src/nn_chromosome.o src/get_ps.o src/get_sound.o src/judge.o src/gui.o
 	gcc -o ${fname} $^ ${GTK_FLAGS} -lm -luuid -lgsl -lgslcblas
 
+debug:
+	make all "CFLAGS=-D __DEBUG__"
+
 input_stream: src/input_stream.c
 	gcc -o ${tools_dir}/$@ $<
 
