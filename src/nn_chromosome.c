@@ -3,9 +3,10 @@
 #include <string.h>
 #include <time.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <uuid/uuid.h>
 
@@ -58,10 +59,17 @@ static Chromosome **init(int gene_num)
 		return NULL;
 	}
 
-	construct_userhash();
-	construct_judgements();
+	if(construct_userhash() == RET_ERROR){
+		printf("[ERROR] fail at construct_userhash()\n");
+		return NULL;
+	}
 
-	printf("[init] genes : 0x%x\n", genes);
+	if(construct_judgements() == RET_ERROR){
+		printf("[ERROR] fail at construct_judgements()\n");
+		return NULL;
+	}
+
+	tagu_debug("[init] genes : 0x%x\n", genes);
 
 	for(i=0;i<gene_num;i++) {
 		Chromosome *chro;
@@ -116,19 +124,13 @@ static int regist_userinfo(User *user, const char *fname)
 		name_length = (NAME_BUF - 1);
 	}
 
-#ifdef __DEBUG_MODE__
+#ifdef __DEBUG__
 	strncpy(username, fname, name_length);
 	username[name_length] = '\0';
 
 	printf("[onix_debug] regist_userinfo > filepath : %s\n", filepath);
 	printf("[onix_debug] regist_userinfo > username : %s [%d]\n", username, name_length);
 #endif
-
-	strncpy(user->name, fname, name_length);
-	user->name[name_length] = '\0';
-
-	printf("[onix_debug] regist_userinfo > filepath : %s\n", filepath);
-	printf("[onix_debug] regist_userinfo > username : %s [%d]\n", user->name, name_length);
 
 	input = (double *)malloc(SAMPLING_RATE * RTIME * sizeof(double) * 2);
 	if(!input){
@@ -188,17 +190,22 @@ static int construct_userhash()
 
 	dd = opendir(StudyDataDir);
 	if(! dd){
-		free(uhash);
-		uhash = NULL;
 
-		return RET_ERROR;
+		if(mkdir(StudyDataDir, S_IRUSR|S_IWUSR|S_IXUSR|S_IXGRP|S_IRGRP|S_IROTH|S_IXOTH) < 0){
+			tagu_debug("construct_userhash 01\n");
+			free(uhash);
+			uhash = NULL;
+	
+			return RET_ERROR;
+		}
+		dd = opendir(StudyDataDir);
 	}
 
 	for(index=0;(dir = readdir(dd)) != NULL;){
 		if(dir->d_name[0] != '.'){
 			regist_userinfo(&uhash->user[index], dir->d_name);
 
-			printf("construct_userhash > [%d] %s\n", index, uhash->user[index].name);
+			tagu_debug("construct_userhash > [%d] %s\n", index, uhash->user[index].name);
 			index++;
 		}
 	}
@@ -207,7 +214,7 @@ static int construct_userhash()
 	
 	uhash->userlen = index;
 
-	printf("[onix_debug] construct_userhash > uhash->userlen : %d\n", uhash->userlen);
+	tagu_debug("[onix_debug] construct_userhash > uhash->userlen : %d\n", uhash->userlen);
 
 	return RET_SUCCESS;
 }
@@ -503,7 +510,7 @@ static int crossover_chromosome(Chromosome **genes)
 
 	len = (*p1)->len;
 
-#ifdef __DEBUG_MODE__
+#ifdef __DEBUG__
 	printf("[onix_debug] (*p1)->fitness : %f\n", (*p1)->fitness);
 	printf("[onix_debug] (*p2)->fitness : %f\n", (*p2)->fitness);
 #endif
@@ -533,7 +540,7 @@ static int crossover_chromosome(Chromosome **genes)
 
 	local_sort((void **)array, 4, compare_chrom_fitness);
 
-#ifdef __DEBUG_MODE__
+#ifdef __DEBUG__
 	for(j=0;j<4;j++){
 		printf("[onix_debug] array[%d]->fitness > (0x%x)%f\n", j, array[j], array[j]->fitness);
 	}
@@ -582,7 +589,7 @@ static void test_eval(Chromosome **genes)
 		for(j=StaticGENES-1;j>=0;j--){
 			uuid_unparse(genes[j]->serial, uuid_string);
 		
-#ifdef __DEBUG_MODE__
+#ifdef __DEBUG__
 			printf("[test_eval] genes[%d]->fitness:%f(%s:%d)\n", j, genes[j]->fitness, uuid_string, genes[j]->generation);
 #endif
 
@@ -635,6 +642,8 @@ static double calcFitness(Chromosome *chro)
 	if(! chro){
 		return RET_ERROR;
 	}
+
+	tagu_debug("[calcFitness] uhash : 0x%x\n", uhash);
 
 	for(i=0;i<uhash->userlen;i++){
 		User user = uhash->user[i];
