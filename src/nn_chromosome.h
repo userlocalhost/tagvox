@@ -16,10 +16,10 @@
 
 #define InputLayerNodes SPECTRUM_LENGTH
 
-#define LogFILE "/home/gakusei/prog/nn_ga/output.log"
-#define SoundOUTPUT "/home/gakusei/prog/nn_ga/sound.data"
-#define StudyDataDir "/home/gakusei/prog/nn_ga/study_data"
-#define ExportDir "/home/gakusei/prog/nn_ga/export_genes/"
+#define LogFILE "output.log"
+#define SoundOUTPUT "sound.data"
+#define StudyDataDir "study_data"
+#define ExportDir "export_genes"
 
 #define NAME_BUF 64
 #define TMP_BUFLEN 512
