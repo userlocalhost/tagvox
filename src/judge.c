@@ -2,12 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <uuid/uuid.h>
+#include <math.h>
 
 #include "judge.h"
 
 static Judgements *judge = NULL;
 static void dump(void);
 static double ret_max(double *, int);
+static double get_average(double *, int);
+static double get_variance(double *, int);
 
 int construct_judgements()
 {
@@ -67,7 +70,7 @@ int push_judgement_chrom(Chromosome *new_chrom)
 		}
 	}
 
-	printf("[push_judgement_chrom] new_chrom->fitness : %f\n", new_chrom->fitness);
+	tagu_debug("[push_judgement_chrom] new_chrom->fitness : %f\n", new_chrom->fitness);
 
 	current_index = judge->member_length;
 	judge->chrom[current_index] = new_chrom;
@@ -89,10 +92,10 @@ static void dump()
 		chrom = judge->chrom[i];
 		uuid_unparse(chrom->serial, uuid_str);
 
-		printf("<judge:dump> [%d/%d] serial:%s, generation:%d, fitness:%f\n", i, judge->member_length, uuid_str, chrom->generation, chrom->fitness);
+		tagu_debug("<judge:dump> [%d/%d] serial:%s, generation:%d, fitness:%f\n", i, judge->member_length, uuid_str, chrom->generation, chrom->fitness);
 	}
 
-	printf("<judge:dump> finish\n");
+	tagu_debug("<judge:dump> finish\n");
 }
 
 static double ret_max(double *array, int len)
@@ -118,6 +121,9 @@ static double ret_max(double *array, int len)
 int eval_chromosome(Chromosome *chro, double *input, double *output)
 {
 	double *src;
+	double input_average;
+	double input_variance;
+	double input_deviation;
 	int i,j,k;
 
 	if(! chro){
@@ -129,9 +135,13 @@ int eval_chromosome(Chromosome *chro, double *input, double *output)
 	}
 
 	if(! input){
-		printf("[error] eval_chromosome > input is invalid\n");
+		tagu_debug("[error] eval_chromosome > input is invalid\n");
 		return RET_ERROR;
 	}
+
+	input_average = get_average(input, chro->len);
+	input_variance = get_variance(input, chro->len);
+	input_deviation = sqrt(input_variance);
 
 	for(src=input, i=0;i<LayerDepth;i++){
 		double max = ret_max(src, chro->len);
@@ -150,10 +160,18 @@ int eval_chromosome(Chromosome *chro, double *input, double *output)
 				if(k == 0){
 					result = chro->schema[i][j][0];
 				}else{
-					double value = (src[k-1]/max) > INPUT_THREASHOLD ? 1 : 0;
+					//double value = (src[k-1]/max) > INPUT_THREASHOLD ? 1 : 0;
+					double value;
+					double deviation = 0;
+					if(src == input){
+						deviation = ((src[k-1] - input_average) / input_deviation) * 10 + 50;
+						value = (deviation > 50) ? 1 : 0;
+					}else{
+						value = src[k-1];
+					}
 
 					result += value * chro->schema[i][j][k];
-					printf("%f += %f(%f/%f=%f) * %f\n", result, value, src[k-1], max, (src[k-1]/max), chro->schema[i][j][k]);
+					tagu_debug("%f += %f(%f/%f, d:%f, va:%f, id:%f) * %f\n", result, value, src[k-1], max, deviation, input_variance, input_deviation, chro->schema[i][j][k]);
 				}
 			}
 
@@ -161,13 +179,46 @@ int eval_chromosome(Chromosome *chro, double *input, double *output)
 
 			output[j] = result > EXPOSE_SCALE  ? 1 : 0;
 
-			printf("[eval_chromosome] result (%d:%d) > %f, %f\n", i, j, result, output[i]);
+			tagu_debug("[eval_chromosome] result (%d:%d) > %f, %f\n", i, j, result, output[i]);
 		}
 
 		src = output;
 	}
 
 	return RET_SUCCESS;
+}
+
+static double get_average(double *input, int length)
+{
+	double average = 0;
+	int i;
+
+	for(i=0; i<length; i++){
+		average += input[i];
+	}
+	average /= length;
+
+	return average;
+}
+
+static double get_variance(double *input, int length)
+{
+	double variance = 0;
+	double average = 0;
+	int i;
+
+	for(i=0; i<length; i++){
+		average += input[i];
+	}
+	average /= length;
+
+	for(i=0; i<length; i++){
+		double tmp = input[i] - average;
+		variance += tmp * tmp;
+	}
+	variance /= length;
+
+	return variance;
 }
 
 /*
@@ -209,7 +260,7 @@ int judgement(double *spectrum, int index_length, int user_len)
 	}
 
 	for(ret_index=i=0;i<user_len;i++){
-		printf("[judgement] candidate[%d] : %f\n", i, candidate[i]);
+		tagu_debug("[judgement] candidate[%d] : %f\n", i, candidate[i]);
 
 		if(candidate[i] > max){
 			ret_index =	i;
