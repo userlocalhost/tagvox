@@ -69,7 +69,7 @@ static Chromosome **init(int gene_num)
 		return NULL;
 	}
 
-	tagu_debug("[init] genes : 0x%x\n", genes);
+	tagu_debug("[init] genes : 0x%x (num:%d)\n", genes, gene_num);
 
 	for(i=0;i<gene_num;i++) {
 		Chromosome *chro;
@@ -637,13 +637,13 @@ static double calcFitness(Chromosome *chro)
 {
 	double output[SPECTRUM_LENGTH];
 	double fit = 0;
-	int i,j,l;
+	int i,j,k;
 
 	if(! chro){
 		return RET_ERROR;
 	}
-
-	tagu_debug("[calcFitness] uhash : 0x%x\n", uhash);
+	
+	tagu_debug("[calcFitness] uhash->userlen %d\n", uhash->userlen);
 
 	for(i=0;i<uhash->userlen;i++){
 		User user = uhash->user[i];
@@ -652,15 +652,22 @@ static double calcFitness(Chromosome *chro)
 		//dump_output(chro, output);
 
 		for(j=0;j<STUDY_NUM;j++){
+			double tmp_fitness = 0;
 			eval_chromosome(chro, user.spectrum[j], output);
 
-			val = (i == j) ? (1 - output[j]) : (0 - output[j]);
+			for(k=0;k<uhash->userlen;k++){
+				val = (i == k) ? (1 - output[k]) : (0 - output[k]);
+	
+				tmp_fitness += (val * val);
+			}
 
-			fit += (val * val);
+			fit += tmp_fitness/uhash->userlen;
 		}
 
-		fit = fit/STUDY_NUM;
+		fit /= STUDY_NUM;
 	}
+
+	tagu_debug("[calcFitness] fitness %f\n", (1 - fit/uhash->userlen));
 
 	return (1 - fit/uhash->userlen);
 }
