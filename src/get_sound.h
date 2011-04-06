@@ -16,7 +16,7 @@
 #define WARMUP_STATE 1
 #define VIEW_RANGE 3
 
-#define SoundOUTPUT "/home/gakusei/prog/nn_ga/sound.data"
+#define SoundOUTPUT "sound.data"
 
 int get_sound(short *, int);
 void write_sound_log(short *, int);

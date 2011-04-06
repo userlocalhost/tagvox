@@ -17,7 +17,6 @@
 #define InputLayerNodes SPECTRUM_LENGTH
 
 #define LogFILE "output.log"
-#define SoundOUTPUT "sound.data"
 #define StudyDataDir "study_data"
 #define ExportDir "export_genes"
 
