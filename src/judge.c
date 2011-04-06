@@ -11,6 +11,7 @@ static void dump(void);
 static double ret_max(double *, int);
 static double get_average(double *, int);
 static double get_variance(double *, int);
+static void get_over_deviation(double *, int, int);
 
 int construct_judgements()
 {
@@ -144,6 +145,7 @@ int eval_chromosome(Chromosome *chro, double *input, double *output)
 	input_deviation = sqrt(input_variance);
 
 	for(src=input, i=0;i<LayerDepth;i++){
+		double result_box[chro->len];
 		double max = ret_max(src, chro->len);
 		if(max == 0){
 			for(j=0;j<chro->len;j++){
@@ -162,30 +164,55 @@ int eval_chromosome(Chromosome *chro, double *input, double *output)
 				}else{
 					//double value = (src[k-1]/max) > INPUT_THREASHOLD ? 1 : 0;
 					double value;
-					double deviation = 0;
+
 					if(src == input){
-						deviation = ((src[k-1] - input_average) / input_deviation) * 10 + 50;
+						double deviation = ((src[k-1] - input_average) / input_deviation) * 10 + 50;
 						value = (deviation > 50) ? 1 : 0;
 					}else{
 						value = src[k-1];
 					}
 
 					result += value * chro->schema[i][j][k];
-					tagu_debug("%f += %f(%f/%f, d:%f, va:%f, id:%f) * %f\n", result, value, src[k-1], max, deviation, input_variance, input_deviation, chro->schema[i][j][k]);
 				}
 			}
 
 			result /= chro->len+1;
 
-			output[j] = result > EXPOSE_SCALE  ? 1 : 0;
-
-			tagu_debug("[eval_chromosome] result (%d:%d) > %f, %f\n", i, j, result, output[i]);
+			result_box[j] = result;
 		}
+
+		memcpy(output, result_box, sizeof(double) * chro->len);
+
+		get_over_deviation(output, chro->len, 50);
 
 		src = output;
 	}
 
 	return RET_SUCCESS;
+}
+
+static void get_over_deviation(double *array, int length, int threashold)
+{
+	double average;
+	double deviation;
+	int i;
+
+	if(! array){
+		return;
+	}
+
+	average = get_average(array, length);
+	deviation = sqrt(get_variance(array, length));
+
+	for(i=0;i<length;i++){
+		double current_deviation;
+		double debug_value;
+
+		debug_value = array[i];
+		current_deviation = ((array[i] - average) / deviation) * 10 + 50;
+
+		array[i] = (current_deviation > threashold) ? 1 : 0;
+	}
 }
 
 static double get_average(double *input, int length)
