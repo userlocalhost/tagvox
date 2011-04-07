@@ -22,4 +22,4 @@ get_ps.o:
 	gcc -c get_ps.c -lm -lgsl -lgslcblas
 
 clean:
-	rm -f src/*.o tagvox ${tools}/input_stream ${tools}/output_stream
+	rm -f src/*.o tagvox ${tools_dir}/input_stream ${tools_dir}/output_stream

@@ -18,7 +18,7 @@ static int setup_dsp(int);
 int main(void)
 {
 	int fd;
-	short *value;
+	short value;
 	int i = 0;
 
 	if ( ( fd = open( "/dev/dsp", O_RDWR ) ) == -1 ) {
@@ -32,8 +32,8 @@ int main(void)
 		return 1;
 	}
 
-	while(read(fd, value, sizeof(short)) > 0){
-		printf("%d\n", *value);
+	while(read(fd, &value, sizeof(short)) > 0){
+		printf("%d\n", value);
 	}
 
 	close( fd );

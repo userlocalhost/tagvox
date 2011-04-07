@@ -18,7 +18,7 @@ static int setup_dsp(int);
 int main(void)
 {
 	int fd;
-	short *value;
+	short value;
 	int i = 0;
 
 	if ( ( fd = open( "/dev/dsp", O_RDWR ) ) == -1 ) {
@@ -32,10 +32,10 @@ int main(void)
 		return 1;
 	}
 
-	while(scanf("%d\n", value) > 0){
-		//printf("value : %d\n", *value);
+	while(scanf("%d\n", &value) > 0){
+		//printf("value : %d\n", value);
 
-		if(write( fd, value, sizeof(short)) == -1){
+		if(write( fd, &value, sizeof(short)) == -1){
 			perror("write()");
 			close( fd );
 			return 1;
