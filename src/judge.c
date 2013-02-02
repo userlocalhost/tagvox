@@ -15,20 +15,20 @@ static void get_over_deviation(double *, int, int);
 
 int construct_judgements()
 {
-	int i;
+  int i;
 
-	if(judge){
-		return RET_SUCCESS;
-	}
+  if(judge){
+    return RET_SUCCESS;
+  }
 
-	judge = (Judgements *) malloc(sizeof(Judgements));
-	if(!judge){
-		return RET_ERROR;
-	}
+  judge = (Judgements *) malloc(sizeof(Judgements));
+  if(!judge){
+    return RET_ERROR;
+  }
 
-	judge->member_length = 0;
+  judge->member_length = 0;
 
-	return RET_SUCCESS;
+  return RET_SUCCESS;
 }
 
 /*
@@ -36,81 +36,81 @@ int construct_judgements()
  * */
 int is_judgements_fill()
 {
-	if(! judge){
-		return RET_ERROR;
-	}
+  if(! judge){
+    return RET_ERROR;
+  }
 
-	if(judge->member_length >= JUDGEMENTS_LEN){
-		return 1;
-	}
+  if(judge->member_length >= JUDGEMENTS_LEN){
+    return 1;
+  }
 
-	return 0;
+  return 0;
 }
 
 void destruct_judgements()
 {
-	if(judge){
-		free(judge);
-	}
+  if(judge){
+    free(judge);
+  }
 }
 
 int push_judgement_chrom(Chromosome *new_chrom)
 {
-	int current_index;
-	int i;
+  int current_index;
+  int i;
 
-	if(is_judgements_fill()){
-		return RET_ERROR;
-	}
+  if(is_judgements_fill()){
+    return RET_ERROR;
+  }
 
-	for(i=0;i<judge->member_length;i++){
-		if(uuid_compare(judge->chrom[i]->serial, new_chrom->serial) == 0 &&
-				judge->chrom[i]->generation == new_chrom->generation){
+  for(i=0;i<judge->member_length;i++){
+    if(uuid_compare(judge->chrom[i]->serial, new_chrom->serial) == 0 &&
+        judge->chrom[i]->generation == new_chrom->generation){
 
-			return RET_SUCCESS;
-		}
-	}
+      return RET_SUCCESS;
+    }
+  }
 
-	tagu_debug("[push_judgement_chrom] new_chrom->fitness : %f\n", new_chrom->fitness);
+  tagu_debug("[push_judgement_chrom] new_chrom->fitness : %f\n", new_chrom->fitness);
 
-	current_index = judge->member_length;
-	judge->chrom[current_index] = new_chrom;
-	judge->member_length++;
+  current_index = judge->member_length;
+  judge->chrom[current_index] = new_chrom;
+  judge->member_length++;
 
-	// for debugging
-	dump();
+  // for debugging
+  dump();
 
-	return RET_SUCCESS;
+  return RET_SUCCESS;
 }
 
 static void dump()
 {
-	int i;
-	char uuid_str[37];
-	Chromosome *chrom;
+  int i;
+  char uuid_str[37];
+  Chromosome *chrom;
 
-	for(i=0;i<(judge->member_length);i++){
-		chrom = judge->chrom[i];
-		uuid_unparse(chrom->serial, uuid_str);
+  for(i=0;i<(judge->member_length);i++){
+    chrom = judge->chrom[i];
+    uuid_unparse(chrom->serial, uuid_str);
 
-		tagu_debug("<judge:dump> [%d/%d] serial:%s, generation:%d, fitness:%f\n", i, judge->member_length, uuid_str, chrom->generation, chrom->fitness);
-	}
+    tagu_debug("<judge:dump> [%d/%d] serial:%s, generation:%d, fitness:%f\n", i, judge->member_length, uuid_str, chrom->generation, chrom->fitness);
+  }
 
-	tagu_debug("<judge:dump> finish\n");
+  tagu_debug("<judge:dump> finish\n");
 }
 
 static double ret_max(double *array, int len)
 {
-	double ret = 0;
-	int i;
+  double ret = 0;
+  int i;
 
-	for(i=0;i<len;i++){
-		if(ret < array[i]){
-			ret = array[i];
-		}
-	}
+  for(i=0;i<len;i++){
+    if(ret < array[i]){
+      ret = array[i];
+    }
+  }
 
-	return ret;
+  return ret;
 }
 
 /*
@@ -121,131 +121,131 @@ static double ret_max(double *array, int len)
  * */
 int eval_chromosome(Chromosome *chro, double *input, double *output)
 {
-	double *src;
-	double input_average;
-	double input_variance;
-	double input_deviation;
-	int i,j,k;
+  double *src;
+  double input_average;
+  double input_variance;
+  double input_deviation;
+  int i,j,k;
 
-	if(! chro){
-		return RET_ERROR;
-	}
+  if(! chro){
+    return RET_ERROR;
+  }
 
-	if(! output){
-		return RET_ERROR;
-	}
+  if(! output){
+    return RET_ERROR;
+  }
 
-	if(! input){
-		tagu_debug("[error] eval_chromosome > input is invalid\n");
-		return RET_ERROR;
-	}
+  if(! input){
+    tagu_debug("[error] eval_chromosome > input is invalid\n");
+    return RET_ERROR;
+  }
 
-	input_average = get_average(input, chro->len);
-	input_variance = get_variance(input, chro->len);
-	input_deviation = sqrt(input_variance);
+  input_average = get_average(input, chro->len);
+  input_variance = get_variance(input, chro->len);
+  input_deviation = sqrt(input_variance);
 
-	for(src=input, i=0;i<LayerDepth;i++){
-		double result_box[chro->len];
-		double max = ret_max(src, chro->len);
-		if(max == 0){
-			for(j=0;j<chro->len;j++){
-				output[j] = 0;
-			}
+  for(src=input, i=0;i<LayerDepth;i++){
+    double result_box[chro->len];
+    double max = ret_max(src, chro->len);
+    if(max == 0){
+      for(j=0;j<chro->len;j++){
+        output[j] = 0;
+      }
 
-			return RET_SUCCESS;
-		}
+      return RET_SUCCESS;
+    }
 
-		for(j=0;j<chro->len;j++){ // for each schema
-			double result = 0;
+    for(j=0;j<chro->len;j++){ // for each schema
+      double result = 0;
 
-			for(k=0;k<chro->len+1;k++){ // for each weight
-				if(k == 0){
-					result = chro->schema[i][j][0];
-				}else{
-					//double value = (src[k-1]/max) > INPUT_THREASHOLD ? 1 : 0;
-					double value;
+      for(k=0;k<chro->len+1;k++){ // for each weight
+        if(k == 0){
+          result = chro->schema[i][j][0];
+        }else{
+          //double value = (src[k-1]/max) > INPUT_THREASHOLD ? 1 : 0;
+          double value;
 
-					if(src == input){
-						double deviation = ((src[k-1] - input_average) / input_deviation) * 10 + 50;
-						value = (deviation > 50) ? 1 : 0;
-					}else{
-						value = src[k-1];
-					}
+          if(src == input){
+            double deviation = ((src[k-1] - input_average) / input_deviation) * 10 + 50;
+            value = (deviation > 50) ? 1 : 0;
+          }else{
+            value = src[k-1];
+          }
 
-					result += value * chro->schema[i][j][k];
-				}
-			}
+          result += value * chro->schema[i][j][k];
+        }
+      }
 
-			result /= chro->len+1;
+      result /= chro->len+1;
 
-			result_box[j] = result;
-		}
+      result_box[j] = result;
+    }
 
-		memcpy(output, result_box, sizeof(double) * chro->len);
+    memcpy(output, result_box, sizeof(double) * chro->len);
 
-		get_over_deviation(output, chro->len, 50);
+    get_over_deviation(output, chro->len, 50);
 
-		src = output;
-	}
+    src = output;
+  }
 
-	return RET_SUCCESS;
+  return RET_SUCCESS;
 }
 
 static void get_over_deviation(double *array, int length, int threashold)
 {
-	double average;
-	double deviation;
-	int i;
+  double average;
+  double deviation;
+  int i;
 
-	if(! array){
-		return;
-	}
+  if(! array){
+    return;
+  }
 
-	average = get_average(array, length);
-	deviation = sqrt(get_variance(array, length));
+  average = get_average(array, length);
+  deviation = sqrt(get_variance(array, length));
 
-	for(i=0;i<length;i++){
-		double current_deviation;
-		double debug_value;
+  for(i=0;i<length;i++){
+    double current_deviation;
+    double debug_value;
 
-		debug_value = array[i];
-		current_deviation = ((array[i] - average) / deviation) * 10 + 50;
+    debug_value = array[i];
+    current_deviation = ((array[i] - average) / deviation) * 10 + 50;
 
-		array[i] = (current_deviation > threashold) ? 1 : 0;
-	}
+    array[i] = (current_deviation > threashold) ? 1 : 0;
+  }
 }
 
 static double get_average(double *input, int length)
 {
-	double average = 0;
-	int i;
+  double average = 0;
+  int i;
 
-	for(i=0; i<length; i++){
-		average += input[i];
-	}
-	average /= length;
+  for(i=0; i<length; i++){
+    average += input[i];
+  }
+  average /= length;
 
-	return average;
+  return average;
 }
 
 static double get_variance(double *input, int length)
 {
-	double variance = 0;
-	double average = 0;
-	int i;
+  double variance = 0;
+  double average = 0;
+  int i;
 
-	for(i=0; i<length; i++){
-		average += input[i];
-	}
-	average /= length;
+  for(i=0; i<length; i++){
+    average += input[i];
+  }
+  average /= length;
 
-	for(i=0; i<length; i++){
-		double tmp = input[i] - average;
-		variance += tmp * tmp;
-	}
-	variance /= length;
+  for(i=0; i<length; i++){
+    double tmp = input[i] - average;
+    variance += tmp * tmp;
+  }
+  variance /= length;
 
-	return variance;
+  return variance;
 }
 
 /*
@@ -255,48 +255,48 @@ static double get_variance(double *input, int length)
  * */
 int judgement(double *spectrum, int index_length, int user_len)
 {
-	int i,j;
-	double *candidate;
-	double *output_buffer;
-	int ret_index;
-	double max = 0;
+  int i,j;
+  double *candidate;
+  double *output_buffer;
+  int ret_index;
+  double max = 0;
 
-	if(! spectrum){
-		return RET_ERROR;
-	}
+  if(! spectrum){
+    return RET_ERROR;
+  }
 
-	candidate = (double *)malloc(sizeof(double) * user_len);
-	if(! candidate){
-		return RET_ERROR;
-	}
+  candidate = (double *)malloc(sizeof(double) * user_len);
+  if(! candidate){
+    return RET_ERROR;
+  }
 
-	output_buffer = (double *)malloc(sizeof(double) * index_length);
-	if(! output_buffer){
-		free(candidate);
-		return RET_ERROR;
-	}
+  output_buffer = (double *)malloc(sizeof(double) * index_length);
+  if(! output_buffer){
+    free(candidate);
+    return RET_ERROR;
+  }
 
-	memset(candidate, 0, sizeof(double) * user_len);
+  memset(candidate, 0, sizeof(double) * user_len);
 
-	for(i=0;i<judge->member_length;i++){
-		eval_chromosome(judge->chrom[i], spectrum, output_buffer);
+  for(i=0;i<judge->member_length;i++){
+    eval_chromosome(judge->chrom[i], spectrum, output_buffer);
 
-		for(j=0;j<user_len;j++){
-			candidate[j] += output_buffer[j];
-		}
-	}
+    for(j=0;j<user_len;j++){
+      candidate[j] += output_buffer[j];
+    }
+  }
 
-	for(ret_index=i=0;i<user_len;i++){
-		tagu_debug("[judgement] candidate[%d] : %f\n", i, candidate[i]);
+  for(ret_index=i=0;i<user_len;i++){
+    tagu_debug("[judgement] candidate[%d] : %f\n", i, candidate[i]);
 
-		if(candidate[i] > max){
-			ret_index =	i;
-			max = candidate[i];
-		}
-	}
+    if(candidate[i] > max){
+      ret_index =  i;
+      max = candidate[i];
+    }
+  }
 
-	free(candidate);
-	free(output_buffer);
+  free(candidate);
+  free(output_buffer);
 
-	return ret_index;
+  return ret_index;
 }
